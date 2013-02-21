@@ -8,20 +8,12 @@ Object stream transform that parses ethernet frame headers.
 
 ```javascript
 var EtherStream = require('ether-stream');
-var pcap = require('pcap-parser');
+var PcapStream = require('pcap-stream');
 
+var pstream = new PcapStream(PCAP_FILE);
 var estream = new EtherStream();
 
-var parser = pcap.parse(PCAP_FILE);
-parser.on('packetData', function(payload) {
-  var flushed = estream.write({data: payload});
-  if (!flushed) {
-    parser.stream.pause();
-    estream.once('drained', parser.stream.resume.bind(parser.stream));
-  }
-});
-
-estream.on('readable', function() {
+pstream.pipe(estream).on('readable', function() {
   var msg = estream.read();
   msg.ether.src === '12:34:56:65:43:21';  // ether frame available as .ether
   msg.ether.dst === '98:76:54:32:10:01';
