@@ -27,6 +27,9 @@ module.exports = EtherStream;
 
 var EtherFrame = require('ether-frame');
 var Transform = require('stream').Transform;
+if (!Transform) {
+  Transform = require('readable-stream/transform');
+}
 var util = require('util');
 
 util.inherits(EtherStream, Transform);
