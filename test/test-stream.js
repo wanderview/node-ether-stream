@@ -25,9 +25,33 @@
 
 var EtherStream = require('../stream');
 
-module.exports.nop = function(test) {
-  test.expect(1);
+var EtherFrame = require('ether-frame');
+
+module.exports.stream = function(test) {
+  test.expect(103);
+
+  var frame = new EtherFrame();
+  var buf = new Buffer(100 + frame.length);
+  frame.toBuffer(buf);
+  for (var i = frame.length; i < 100; ++i) {
+    buf[i] = i;
+  }
+
   var estream = new EtherStream();
-  test.ok(estream instanceof EtherStream);
-  test.done();
+  estream.on('readable', function() {
+    var msg = estream.read();
+    if (msg) {
+      test.equals(frame.src, msg.ether.src);
+      test.equals(frame.dst, msg.ether.dst);
+      test.equals(frame.type, msg.ether.type);
+      for (var i = 0; i < 100; ++i) {
+        test.equals(buf[i + frame.length], msg.data[i]);
+      }
+
+      test.done();
+    }
+  });
+  estream.read(0);
+
+  estream.write(buf);
 };

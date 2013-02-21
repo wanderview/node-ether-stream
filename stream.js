@@ -25,6 +25,7 @@
 
 module.exports = EtherStream;
 
+var EtherFrame = require('ether-frame');
 var Transform = require('stream').Transform;
 var util = require('util');
 
@@ -49,5 +50,12 @@ function EtherStream(opts) {
 }
 
 EtherStream.prototype._transform = function(msg, output, callback) {
-  // TODO: implement transform
+  var data = (msg instanceof Buffer) ? msg : msg.data;
+  try {
+    var frame = new EtherFrame(data);
+    output({ ether: frame, data: data.slice(frame.length) });
+    callback();
+  } catch (error) {
+    this.emit('ignored', msg);
+  }
 };
