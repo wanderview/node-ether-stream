@@ -57,8 +57,8 @@ EtherStream.prototype._transform = function(msg, output, callback) {
   try {
     var frame = new EtherFrame(data);
     output({ ether: frame, data: data.slice(frame.length) });
-    callback();
   } catch (error) {
     this.emit('ignored', msg);
   }
+  callback();
 };
