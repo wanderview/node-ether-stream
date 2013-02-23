@@ -52,15 +52,20 @@ function EtherStream(opts) {
   return self;
 }
 
-EtherStream.prototype._transform = function(msg, output, callback) {
-  var data = (msg instanceof Buffer) ? msg : msg.data;
-  var offset = (msg instanceof Buffer) ? 0 : ~~msg.offset;
+EtherStream.prototype._transform = function(origMsg, output, callback) {
+  var msg = origMsg;
+  if (msg instanceof Buffer) {
+    msg = { data: msg, offset: 0 };
+  }
+  msg.offset = ~~msg.offset;
 
   try {
-    var frame = new EtherFrame(data, offset);
-    output({ ether: frame, data: data, offset: offset + frame.length });
+    var frame = new EtherFrame(msg.data, msg.offset);
+    msg.ether = frame;
+    msg.offset += frame.length;
+    output(msg);
   } catch (error) {
-    this.emit('ignored', msg);
+    this.emit('ignored', origMsg);
   }
   callback();
 };
