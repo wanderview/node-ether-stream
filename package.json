@@ -9,7 +9,7 @@
     "parse",
     "stream"
   ],
-  "version": "0.1.3",
+  "version": "0.2.0",
   "author": "Ben Kelly <ben@wanderview.com>",
   "license": "BSD",
   "dependencies": {
