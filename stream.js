@@ -54,9 +54,11 @@ function EtherStream(opts) {
 
 EtherStream.prototype._transform = function(msg, output, callback) {
   var data = (msg instanceof Buffer) ? msg : msg.data;
+  var offset = (msg instanceof Buffer) ? 0 : ~~msg.offset;
+
   try {
-    var frame = new EtherFrame(data);
-    output({ ether: frame, data: data.slice(frame.length) });
+    var frame = new EtherFrame(data, offset);
+    output({ ether: frame, data: data, offset: offset + frame.length });
   } catch (error) {
     this.emit('ignored', msg);
   }

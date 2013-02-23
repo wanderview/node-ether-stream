@@ -28,12 +28,13 @@ var EtherStream = require('../stream');
 var EtherFrame = require('ether-frame');
 
 module.exports.stream = function(test) {
-  test.expect(103);
+  test.expect(104);
 
   var frame = new EtherFrame();
-  var buf = new Buffer(100 + frame.length);
+  var size = 100 + frame.length;
+  var buf = new Buffer(size);
   frame.toBuffer(buf);
-  for (var i = frame.length; i < 100; ++i) {
+  for (var i = frame.length; i < size; ++i) {
     buf[i] = i;
   }
 
@@ -44,8 +45,9 @@ module.exports.stream = function(test) {
       test.equals(frame.src, msg.ether.src);
       test.equals(frame.dst, msg.ether.dst);
       test.equals(frame.type, msg.ether.type);
-      for (var i = 0; i < 100; ++i) {
-        test.equals(buf[i + frame.length], msg.data[i]);
+      test.equals(frame.length, msg.offset);
+      for (var i = msg.offset; i < size; ++i) {
+        test.equals(buf[i], msg.data[i]);
       }
 
       test.done();
