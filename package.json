@@ -10,7 +10,7 @@
     "composable-object-stream",
     "stream"
   ],
-  "version": "0.2.1",
+  "version": "0.3.0",
   "author": "Ben Kelly <ben@wanderview.com>",
   "license": "BSD",
   "dependencies": {
