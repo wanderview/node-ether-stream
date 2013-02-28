@@ -26,13 +26,10 @@
 module.exports = EtherStream;
 
 var EtherFrame = require('ether-frame');
-var Transform = require('stream').Transform;
-if (!Transform) {
-  Transform = require('readable-stream/transform');
-}
+var ObjectTransform = require('object-transform');
 var util = require('util');
 
-util.inherits(EtherStream, Transform);
+util.inherits(EtherStream, ObjectTransform);
 
 function EtherStream(opts) {
   var self = (this instanceof EtherStream)
@@ -41,17 +38,11 @@ function EtherStream(opts) {
 
   opts = opts || {};
 
-  if (opts.objectMode === false) {
-    throw new Error('EtherStream requires stream objectMode; do not set ' +
-                    'option {objectMode: false}');
-  }
-  opts.objectMode = true;
+  opts.meta = 'ether';
 
-  Transform.call(self, opts);
+  ObjectTransform.call(self, opts);
 
-  self._ether = opts.ether;
-
-  if (self._ether && typeof self._ether.toBuffer !== 'function') {
+  if (self.ether && typeof self.ether.toBuffer !== 'function') {
     throw new Error('Optional ether value must be null or provide ' +
                     'toBuffer() function');
   }
@@ -59,50 +50,18 @@ function EtherStream(opts) {
   return self;
 }
 
-EtherStream.prototype._transform = function(origMsg, output, callback) {
-  var msg = origMsg;
-  if (msg instanceof Buffer) {
-    msg = { data: msg, offset: 0 };
-  }
-  msg.offset = ~~msg.offset;
-
-  var ether = msg.ether || this._ether;
-  try {
-    if (ether && typeof ether.toBuffer === 'function') {
-      this._expand(ether, msg, output);
-    } else {
-      this._reduce(msg, output);
-    }
-  } catch (error) {
-    this.emit('ignored', error, origMsg);
-  }
-
-  callback();
-};
-
-EtherStream.prototype._reduce = function(msg, output) {
+EtherStream.prototype._reduce = function(msg, output, callback) {
   msg.ether = new EtherFrame(msg.data, msg.offset);
   msg.offset += msg.ether.length;
   output(msg);
+  callback();
 };
 
-EtherStream.prototype._expand = function(ether, msg, output) {
+EtherStream.prototype._expand = function(ether, msg, output, callback) {
   msg.data = this._grow(msg.data, msg.offset, ether.length);
   ether.toBuffer(msg.data, msg.offset);
   msg.ether = ether;
   msg.offset += ether.length;
   output(msg);
-};
-
-EtherStream.prototype._grow = function(buf, offset, length) {
-  var reqLength = offset + length;
-  if (reqLength <= buf.length) {
-    return buf;
-  }
-  if (!buf) {
-    return new Buffer(reqLength);
-  }
-  var newBuf = new Buffer(reqLength);
-  buf.copy(newBuf, 0, 0, offset);
-  return newBuf;
+  callback();
 };
