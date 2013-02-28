@@ -27,7 +27,7 @@ var EtherStream = require('../stream');
 
 var EtherFrame = require('ether-frame');
 
-module.exports.stream = function(test) {
+module.exports.reduce = function(test) {
   test.expect(104);
 
   var frame = new EtherFrame();
@@ -56,4 +56,92 @@ module.exports.stream = function(test) {
   estream.read(0);
 
   estream.write(buf);
+};
+
+module.exports.grow = function(test) {
+  test.expect(7);
+
+  var buf = new Buffer(5);
+  for (var i = 0; i < buf.length; ++i) {
+    buf.writeUInt8(i, i);
+  }
+
+  test.deepEqual(buf, EtherStream.prototype._grow(buf, 2, 2));
+
+  var out = EtherStream.prototype._grow(buf, 5, 10);
+  test.equal(15, out.length);
+  for (var i = 0; i < buf.length; ++i) {
+    test.equal(buf.readUInt8(i), out.readUInt8(i), 'byte [' + i + ']');
+  }
+
+  test.done()
+};
+
+module.exports.expand = function(test) {
+  test.expect(3);
+
+  var msg = {
+    ether: new EtherFrame({
+      src: '12:34:56:65:43:21',
+      dst: '76:54:32:23:45:67'
+    }),
+    data: new Buffer(1)
+  }
+
+  var estream = new EtherStream();
+  estream.on('readable', function() {
+    var out = estream.read();
+
+    test.ok(out.data.length >= msg.ether.length);
+    test.equal(msg.ether.length, out.offset);
+
+    var parsed = new EtherFrame(out.data, out.offset - msg.ether.length);
+
+    test.deepEqual(msg.ether, parsed);
+
+    test.done();
+  });
+
+  estream.on('end', function() {
+    test.done();
+  });
+
+  estream.read(0);
+
+  estream.write(msg);
+};
+
+module.exports.expandDefault = function(test) {
+  test.expect(3);
+
+  var ether = new EtherFrame({
+    src: '12:34:56:65:43:21',
+    dst: '76:54:32:23:45:67'
+  });
+
+  var msg = {
+    data: new Buffer(1)
+  }
+
+  var estream = new EtherStream({ether: ether});
+  estream.on('readable', function() {
+    var out = estream.read();
+
+    test.ok(out.data.length >= ether.length);
+    test.equal(ether.length, out.offset);
+
+    var parsed = new EtherFrame(out.data, out.offset - ether.length);
+
+    test.deepEqual(ether, parsed);
+
+    test.done();
+  });
+
+  estream.on('end', function() {
+    test.done();
+  });
+
+  estream.read(0);
+
+  estream.write(msg);
 };

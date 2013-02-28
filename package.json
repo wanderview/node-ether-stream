@@ -1,12 +1,13 @@
 {
   "name": "ether-stream",
-  "description": "Object stream transform that parses ethernet frame headers.",
+  "description": "Ethernet frame serialization object stream.",
   "keywords": [
     "ethernet",
     "mac",
     "address",
     "binary",
     "parse",
+    "composable-object-stream",
     "stream"
   ],
   "version": "0.2.1",

@@ -49,6 +49,13 @@ function EtherStream(opts) {
 
   Transform.call(self, opts);
 
+  self._ether = opts.ether;
+
+  if (self._ether && typeof self._ether.toBuffer !== 'function') {
+    throw new Error('Optional ether value must be null or provide ' +
+                    'toBuffer() function');
+  }
+
   return self;
 }
 
@@ -59,13 +66,43 @@ EtherStream.prototype._transform = function(origMsg, output, callback) {
   }
   msg.offset = ~~msg.offset;
 
+  var ether = msg.ether || this._ether;
   try {
-    var frame = new EtherFrame(msg.data, msg.offset);
-    msg.ether = frame;
-    msg.offset += frame.length;
-    output(msg);
+    if (ether && typeof ether.toBuffer === 'function') {
+      this._expand(ether, msg, output);
+    } else {
+      this._reduce(msg, output);
+    }
   } catch (error) {
-    this.emit('ignored', origMsg);
+    this.emit('ignored', error, origMsg);
   }
+
   callback();
+};
+
+EtherStream.prototype._reduce = function(msg, output) {
+  msg.ether = new EtherFrame(msg.data, msg.offset);
+  msg.offset += msg.ether.length;
+  output(msg);
+};
+
+EtherStream.prototype._expand = function(ether, msg, output) {
+  msg.data = this._grow(msg.data, msg.offset, ether.length);
+  ether.toBuffer(msg.data, msg.offset);
+  msg.ether = ether;
+  msg.offset += ether.length;
+  output(msg);
+};
+
+EtherStream.prototype._grow = function(buf, offset, length) {
+  var reqLength = offset + length;
+  if (reqLength <= buf.length) {
+    return buf;
+  }
+  if (!buf) {
+    return new Buffer(reqLength);
+  }
+  var newBuf = new Buffer(reqLength);
+  buf.copy(newBuf, 0, 0, offset);
+  return newBuf;
 };
