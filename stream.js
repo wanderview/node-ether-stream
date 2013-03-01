@@ -53,15 +53,12 @@ function EtherStream(opts) {
 EtherStream.prototype._reduce = function(msg, output, callback) {
   msg.ether = new EtherFrame(msg.data, msg.offset);
   msg.offset += msg.ether.length;
-  output(msg);
-  callback();
+  return msg;
 };
 
 EtherStream.prototype._expand = function(ether, msg, output, callback) {
-  msg.data = this._grow(msg.data, msg.offset, ether.length);
   ether.toBuffer(msg.data, msg.offset);
   msg.ether = ether;
   msg.offset += ether.length;
-  output(msg);
-  callback();
+  return msg;
 };
